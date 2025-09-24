@@ -21,6 +21,8 @@ async function signIn(req, res) {
           message: "Sign in successfull",
           token: jwtToken,
         });
+      } else if (!passwordIsCorrect) {
+        return res.status(400).send("Passsword is incorrect");
       }
     }
   } catch (e) {
