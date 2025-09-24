@@ -1,5 +1,5 @@
-import User from "../config/schema/user.schema.js";
-import Trade from "../config/schema/trade.schema.js";
+import User from "../schema/user.schema.js";
+import Trade from "../schema/trade.schema.js";
 async function transferCredits(req, res) {
   try {
     const { tradeAmount, tradeSender, tradeReceiver, description } = req.body;

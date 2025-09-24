@@ -1,4 +1,4 @@
-import User from "../config/schema/user.schema.js";
+import User from "../schema/user.schema.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 async function signIn(req, res) {
