@@ -18,3 +18,4 @@ function verifyJWT(req, res, next) {
 }
 
 export default verifyJWT;
+

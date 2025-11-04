@@ -21,3 +21,4 @@ async function searchUser(req, res) {
 }
 
 export default searchUser;
+

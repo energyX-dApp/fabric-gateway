@@ -10,3 +10,4 @@ async function connectToMongoDB() {
 }
 
 export default connectToMongoDB;
+

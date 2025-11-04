@@ -41,3 +41,4 @@ async function signUp(req, res) {
 }
 
 export default signUp;
+

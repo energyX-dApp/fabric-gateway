@@ -1,21 +1,22 @@
 {
-  "name": "energyx",
-  "version": "1.0.0",
-  "description": "",
+  "name": "co2-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "REST API for CO2 chaincode on Fabric test-network (Org1, Org2, Gov)",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+    "@grpc/grpc-js": "^1.10.0",
+    "@hyperledger/fabric-gateway": "^1.5.0",
     "bcrypt": "^6.0.0",
-    "dotenv": "^17.2.2",
-    "express": "^5.1.0",
+    "dotenv": "^17.2.3",
+    "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.2"
+    "mongoose": "^8.18.2",
+    "yaml": "^2.5.1"
   }
 }

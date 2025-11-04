@@ -21,3 +21,4 @@ async function myProfile(req, res) {
 }
 
 export default myProfile;
+
