@@ -4,6 +4,25 @@ import { getContractFor, getOrgFromReq } from "../fabric.js";
 
 const router = express.Router();
 
+function tryParseJsonOrCsvBytes(text) {
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch (_) {
+    // maybe it's a CSV of byte values like "91,123,34,..."
+    const maybeCsv = text.trim();
+    if (/^\d+(,\d+)*$/.test(maybeCsv)) {
+      try {
+        const arr = maybeCsv.split(",").map((n) => Number(n.trim()));
+        const str = Buffer.from(Uint8Array.from(arr)).toString("utf8");
+        return { ok: true, value: JSON.parse(str) };
+      } catch (e2) {
+        return { ok: false, error: String(e2.message || e2), raw: text };
+      }
+    }
+    return { ok: false, error: "not-json", raw: text };
+  }
+}
+
 // List all allowances
 router.get("/", async (req, res) => {
   const org = getOrgFromReq(req);
@@ -27,11 +46,9 @@ router.get("/", async (req, res) => {
       } catch (_) {}
     }
     const text = resultBytes.toString();
-    try {
-      res.json(JSON.parse(text));
-    } catch (parseErr) {
-      res.json({ parseError: String(parseErr.message || parseErr), data: text });
-    }
+    const parsed = tryParseJsonOrCsvBytes(text);
+    if (parsed.ok) return res.json(parsed.value);
+    return res.json({ parseError: parsed.error, data: parsed.raw ?? text });
   } catch (e) {
     if (gateway) {
       try {
@@ -71,11 +88,9 @@ router.get("/:id", async (req, res) => {
       } catch (_) {}
     }
     const text = resultBytes.toString();
-    try {
-      res.json(JSON.parse(text));
-    } catch (parseErr) {
-      res.json({ parseError: String(parseErr.message || parseErr), data: text });
-    }
+    const parsed = tryParseJsonOrCsvBytes(text);
+    if (parsed.ok) return res.json(parsed.value);
+    return res.json({ parseError: parsed.error, data: parsed.raw ?? text });
   } catch (e) {
     if (gateway) {
       try {
