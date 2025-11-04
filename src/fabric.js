@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import fabricGateway from "@hyperledger/fabric-gateway";
 import crypto from "crypto";
-const { Gateway, signers, clients } = fabricGateway;
+import * as grpc from "@grpc/grpc-js";
+const { connect, signers } = fabricGateway;
 
 import {
   ORG_MAP,
@@ -48,15 +49,15 @@ export async function getContractFor(orgKey) {
   }
 
   const tlsRootCert = Buffer.from(peer.tlsCACerts.pem);
-  const client = await clients.newGrpcClient({
-    endpoint: peerEndpoint,
-    tlsRootCert: tlsRootCert,
-    serverNameOverride:
-      peer.grpcOptions?.["ssl-target-name-override"] || peerName,
+  const tlsCredentials = grpc.credentials.createSsl(tlsRootCert);
+  const serverNameOverride =
+    peer.grpcOptions?.["ssl-target-name-override"] || peerName;
+  const client = new grpc.Client(peerEndpoint, tlsCredentials, {
+    "grpc.ssl_target_name_override": serverNameOverride,
+    "grpc.default_authority": serverNameOverride,
   });
 
-  const gateway = new Gateway();
-  await gateway.connect(client, { identity, signer });
+  const gateway = await connect({ client, identity, signer });
 
   const network = gateway.getNetwork(CHANNEL);
   const contract = network.getContract(CHAINCODE);
