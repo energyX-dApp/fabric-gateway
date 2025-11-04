@@ -10,8 +10,9 @@ services:
       - .env
     volumes:
       - .:/workspace:ro
-      - ../test-network:/workspace/test-network:ro
+      - ../test-network:/test-network:ro
     environment:
+      - REPO_ROOT=/
       - DISCOVERY_AS_LOCALHOST=true
       - NODE_ENV=production
       - PORT=8000
