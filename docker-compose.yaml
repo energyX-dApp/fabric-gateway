@@ -9,8 +9,7 @@ services:
     env_file:
       - .env
     volumes:
-      - .:/workspace:ro
-      - ../test-network:/test-network:ro
+      - ${TEST_NETWORK_HOST}:/test-network:ro
     environment:
       - REPO_ROOT=/
       - DISCOVERY_AS_LOCALHOST=true
