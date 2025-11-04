@@ -16,12 +16,28 @@ router.get("/", async (req, res) => {
     const resultBytes = await contract.evaluateTransaction(
       "QueryAllAllowances"
     );
-    await gateway.close();
-    await client.close();
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.json(JSON.parse(resultBytes.toString()));
   } catch (e) {
-    if (gateway) await gateway.close().catch(() => {});
-    if (client) await client.close().catch(() => {});
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.status(500).json({ error: e.message });
   }
 });
@@ -39,12 +55,28 @@ router.get("/:id", async (req, res) => {
       "ReadAllowance",
       req.params.id
     );
-    await gateway.close();
-    await client.close();
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.json(JSON.parse(resultBytes.toString()));
   } catch (e) {
-    if (gateway) await gateway.close().catch(() => {});
-    if (client) await client.close().catch(() => {});
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.status(500).json({ error: e.message });
   }
 });
@@ -66,12 +98,28 @@ router.post("/:id/transfer", async (req, res) => {
       req.params.id,
       newOwner
     );
-    await gateway.close();
-    await client.close();
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.json({ ok: true });
   } catch (e) {
-    if (gateway) await gateway.close().catch(() => {});
-    if (client) await client.close().catch(() => {});
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.status(500).json({ error: e.message });
   }
 });
@@ -116,15 +164,31 @@ router.get("/owner/:owner/balance", async (req, res) => {
       "GetBalanceForOwner",
       req.params.owner
     );
-    await gateway.close();
-    await client.close();
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.json({
       owner: req.params.owner,
       balanceKg: Number(resultBytes.toString()),
     });
   } catch (e) {
-    if (gateway) await gateway.close().catch(() => {});
-    if (client) await client.close().catch(() => {});
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.status(500).json({ error: e.message });
   }
 });

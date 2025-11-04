@@ -24,12 +24,28 @@ router.post("/allowances", async (req, res) => {
       String(totalKg),
       String(note || "")
     );
-    await gateway.close();
-    await client.close();
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.json({ ok: true });
   } catch (e) {
-    if (gateway) await gateway.close().catch(() => {});
-    if (client) await client.close().catch(() => {});
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.status(500).json({ error: e.message });
   }
 });
@@ -48,12 +64,28 @@ router.post("/allowances/:id/revoke", async (req, res) => {
       req.params.id,
       String(reason || "")
     );
-    await gateway.close();
-    await client.close();
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.json({ ok: true });
   } catch (e) {
-    if (gateway) await gateway.close().catch(() => {});
-    if (client) await client.close().catch(() => {});
+    if (gateway) {
+      try {
+        gateway.close && gateway.close();
+      } catch (_) {}
+    }
+    if (client) {
+      try {
+        client.close && client.close();
+      } catch (_) {}
+    }
     res.status(500).json({ error: e.message });
   }
 });
