@@ -16,18 +16,6 @@ services:
       - DISCOVERY_AS_LOCALHOST=true
       - NODE_ENV=production
       - PORT=8000
-      - MONGO_URI=mongodb://mongo:27017/energyx
       - JWT_SECRET=change-me
     restart: unless-stopped
 
-  mongo:
-    image: mongo:6
-    container_name: mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-
-volumes:
-  mongo_data:
