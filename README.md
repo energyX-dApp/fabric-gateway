@@ -3,27 +3,26 @@
 **Node.js REST API for CO2 Chaincode (Hyperledger Fabric)**
 
 This API lets organizations (Gov, Org1, Org2) interact with the `co2` chaincode on a Fabric network.
-It’s built in **Node.js (ESM)** and ready to run both locally and via **Docker Compose**.
+It’s built in **Node.js (ESM)** and can run locally or in a single Docker container.
 
 ---
 
 ## Project Structure
 
 ```
-co2-api/
+fabric-gateway/
 │
 ├── server.js                # Entry point
 ├── .env                     # Environment variables
 ├── Dockerfile               # Container definition
-├── docker-compose.yml       # For easy local deployment
 │
 └── src/
-    ├── config.mjs           # Config loader (env, orgs, paths)
-    ├── fabric.mjs           # Fabric gateway connection logic
+    ├── config.js            # Config loader (env, orgs, paths)
+    ├── fabric.js            # Fabric gateway connection logic
     └── routes/
-        ├── health.mjs       # /health route
-        ├── allowances.mjs   # /allowances endpoints
-        └── gov.mjs          # /gov endpoints
+        ├── health.js        # /health route
+        ├── allowances.js    # /allowances endpoints
+        └── gov.js           # /gov endpoints
 ```
 
 ---
@@ -45,19 +44,26 @@ Before running, ensure you have:
 ### Install dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
 ### Set environment variables
 
-Create `.env` in the root:
+Create `.env` in the root (example):
 
 ```bash
 PORT=8000
 CHANNEL=mychannel
-CHAINCODE=co2
-DISCOVERY_AS_LOCALHOST=true
+CHAINCODE=co2-cha
+DISCOVERY_AS_LOCALHOST=false
 DEFAULT_ORG=Org1
+
+# Point REPO_ROOT so code finds your test-network at $REPO_ROOT/test-network
+# e.g. if your network is at /root/energyX_network/test-network set:
+REPO_ROOT=/root/energyX_network
+
+# MongoDB Atlas connection (example)
+MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority&appName=<app>
 ```
 
 ### Start server
@@ -71,29 +77,26 @@ Visit:
 
 ---
 
-## Run with Docker (Recommended)
+## Run with Docker (single container)
 
-### Build & Start
-
+Build the image:
 ```bash
-docker compose up --build -d
+docker build -t co2-api .
 ```
 
-### Stop
-
+Run (mount your test-network and set REPO_ROOT=/ so app resolves /test-network):
 ```bash
-docker compose down
+docker run -d --name co2-api \
+  -p 8000:8000 \
+  --env-file .env \
+  -e REPO_ROOT=/ \
+  -v /absolute/path/to/test-network:/test-network:ro \
+  co2-api
 ```
 
-### Logs
-
+Logs / health:
 ```bash
 docker logs -f co2-api
-```
-
-### Check Health
-
-```bash
 curl http://localhost:8000/health
 ```
 
@@ -105,9 +108,10 @@ curl http://localhost:8000/health
 | ------------------------ | --------- | -------------------------------- |
 | `PORT`                   | 8000      | API server port                  |
 | `CHANNEL`                | mychannel | Fabric channel name              |
-| `CHAINCODE`              | co2       | Deployed chaincode name          |
-| `DISCOVERY_AS_LOCALHOST` | true      | Use localhost for peer discovery |
+| `CHAINCODE`              | co2-cha   | Deployed chaincode name          |
+| `DISCOVERY_AS_LOCALHOST` | false     | Use localhost for peer discovery |
 | `DEFAULT_ORG`            | Org1      | Default org if not specified     |
+| `REPO_ROOT`              | repo root | Base path that contains test-network |
 
 ---
 
@@ -126,7 +130,7 @@ You can override it via:
 | GET    | `/health`                    | Health check                          |
 | GET    | `/allowances`                | List all allowances                   |
 | GET    | `/allowances/:id`            | Read a single allowance               |
-| GET    | `/owners/:owner/balance`     | Get balance (in kg) for an owner      |
+| GET    | `/owner/:owner/balance`      | Get balance (in kg) for an owner      |
 | POST   | `/gov/allowances`            | Create new allowance (Gov only)       |
 | POST   | `/allowances/:id/transfer`   | Transfer ownership (Owner/Gov)        |
 | POST   | `/allowances/:id/consume`    | Consume part of allowance (Owner/Gov) |
@@ -161,36 +165,25 @@ curl -s -X POST http://localhost:8000/allowances/A1/consume \
 ### Get Balance
 
 ```bash
-curl -s http://localhost:8000/owners/Org1MSP/balance | jq .
+curl -s http://localhost:8000/owner/Org1MSP/balance | jq .
 ```
 
 ---
 
-## Docker Notes
+## Networking Notes (Fabric peers)
 
-- The container mounts this repo at `/workspace` **read-only**.
-- It also mounts your **`../test-network`** directory to access org MSPs and connection profiles.
-- By default, `DISCOVERY_AS_LOCALHOST=true` (use `localhost` endpoints in profiles).
-- If attaching to the same Docker network as your peers, set:
-
-  ```bash
-  DISCOVERY_AS_LOCALHOST=false
-  ```
-
-  and make sure connection profiles point to peer/orderer **container hostnames**.
+- If your connection profiles (CCP) have peer URLs like `grpcs://peer0.org1.example.com:7051` and your peers run in Docker, set `DISCOVERY_AS_LOCALHOST=false` and ensure your client host can reach those hostnames (e.g., by joining the same Docker network or adding host mappings).
+- If your CCP uses `localhost:7051` published ports on the host, set `DISCOVERY_AS_LOCALHOST=true`.
 
 ---
 
 ## Common Issues
 
-**❌ SyntaxError: Named export 'Gateway' not found**
+**Fabric Gateway client setup**
 
-> Fix: `@hyperledger/fabric-gateway` is CommonJS — use default import:
-
-```js
-import fabricGateway from "@hyperledger/fabric-gateway";
-const { Gateway, signers, clients } = fabricGateway;
-```
+- We parse CCP peer URLs and pass only `host:port` to gRPC.
+- TLS is configured via `@grpc/grpc-js`.
+- Signer is created from the PEM key using `crypto.createPrivateKey(...)`.
 
 ---
 
@@ -200,12 +193,9 @@ const { Gateway, signers, clients } = fabricGateway;
 # Run locally
 npm start
 
-# Run lint / checks
-npm run lint
-
-# Rebuild container (fresh)
-docker compose build --no-cache
-docker compose up -d
+# Rebuild container
+docker build -t co2-api .
+docker run -d --name co2-api -p 8000:8000 --env-file .env -e REPO_ROOT=/ -v /abs/path/test-network:/test-network:ro co2-api
 ```
 
 ---
@@ -221,8 +211,8 @@ docker compose up -d
 | Network       | `mychannel`           |
 | Default Org   | `Org1`                |
 | Port          | 8000                  |
-| Containerized | ✅ via Docker Compose |
+| Containerized | ✅ via Dockerfile     |
 
 ---
 
-Would you like me to include an optional section for **attaching this container to your Fabric network’s Docker bridge (e.g., `fabric_test` network)** so it can reach peers by container name instead of `localhost`? That’s useful if you plan to deploy it alongside Fabric peers.
+The API auto-decodes chaincode responses that return CSV byte lists (e.g., `91,123,34,...`) back into JSON.
