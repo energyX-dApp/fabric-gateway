@@ -117,55 +117,97 @@ curl http://localhost:8000/health
 
 ## API Usage
 
-Default org for requests is **Org1**.
-You can override it via:
+Protected endpoints require both:
+- HTTP Header: `Authorization: Bearer <JWT>` (from /signin or /signup)
+- HTTP Header: `x-org: Org1|Org2|Gov` (must match the org stored in your token)
 
-- HTTP Header: `x-org: Org1|Org2|Gov`
-- or Query Param: `?org=Org2`
+Notes:
+- On signup, you choose an `orgKey` (Org1|Org2|Gov); it is stored in the user record and embedded in the JWT.
+- The server enforces that `x-org` equals the `orgKey` in your token for protected routes.
 
 ### Endpoints
 
 | Method | Endpoint                     | Description                           |
 | ------ | ---------------------------- | ------------------------------------- |
 | GET    | `/health`                    | Health check                          |
-| GET    | `/allowances`                | List all allowances                   |
-| GET    | `/allowances/:id`            | Read a single allowance               |
-| GET    | `/owner/:owner/balance`      | Get balance (in kg) for an owner      |
-| POST   | `/gov/allowances`            | Create new allowance (Gov only)       |
-| POST   | `/allowances/:id/transfer`   | Transfer ownership (Owner/Gov)        |
-| POST   | `/allowances/:id/consume`    | Consume part of allowance (Owner/Gov) |
-| POST   | `/gov/allowances/:id/revoke` | Revoke allowance (Gov only)           |
+| POST   | `/signup`                    | Register user; body: username,email,unhashedPassword,orgKey |
+| POST   | `/signin`                    | Login; body: email,unhashedPassword → returns JWT |
+| GET    | `/myProfile`                 | Get own profile (JWT)                 |
+| POST   | `/executeTrade`              | Execute trade (JWT)                   |
+| GET    | `/allowances`                | List all allowances (JWT + x-org)     |
+| GET    | `/allowances/:id`            | Read a single allowance (JWT + x-org) |
+| POST   | `/allowances/:id/transfer`   | Transfer ownership (JWT + x-org)      |
+| POST   | `/allowances/:id/consume`    | Consume part of allowance (JWT + x-org) |
+| GET    | `/owner/:owner/balance`      | Get balance (in kg) for an owner (JWT + x-org) |
+| POST   | `/gov/allowances`            | Create new allowance (Gov JWT + x-org=Gov) |
+| POST   | `/gov/allowances/:id/revoke` | Revoke allowance (Gov JWT + x-org=Gov) |
 
 ---
 
 ## Example Usage
+
+### Sign up (choose org)
+
+```bash
+curl -s -X POST http://localhost:8000/signup \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "username":"alice",
+    "email":"alice@example.com",
+    "unhashedPassword":"secret",
+    "orgKey":"Org1"
+  }'
+```
+
+### Sign in
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/signin \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"alice@example.com","unhashedPassword":"secret"}' | jq -r .token)
+```
+
+### Get my profile
+
+```bash
+curl -s http://localhost:8000/myProfile \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
 
 ### Create Allowance (Gov)
 
 ```bash
 curl -s -X POST http://localhost:8000/gov/allowances \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <GOV_TOKEN>' \
+  -H 'x-org: Gov' \
   -d '{"id":"A1","owner":"Org1MSP","totalKg":1000,"note":"mint"}'
 ```
 
 ### List Allowances (Org1)
 
 ```bash
-curl -s http://localhost:8000/allowances -H 'x-org: Org1' | jq .
+curl -s http://localhost:8000/allowances \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'x-org: Org1' | jq .
 ```
 
 ### Consume Allowance (Org1)
 
 ```bash
 curl -s -X POST http://localhost:8000/allowances/A1/consume \
-  -H 'Content-Type: application/json' -H 'x-org: Org1' \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'x-org: Org1' \
   -d '{"amountKg": 50}'
 ```
 
 ### Get Balance
 
 ```bash
-curl -s http://localhost:8000/owner/Org1MSP/balance | jq .
+curl -s http://localhost:8000/owner/Org1MSP/balance \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'x-org: Org1' | jq .
 ```
 
 ---

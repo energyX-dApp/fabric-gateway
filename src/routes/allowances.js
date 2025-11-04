@@ -1,6 +1,8 @@
 // routes/allowances.mjs
 import express from "express";
 import { getContractFor, getOrgFromReq } from "../fabric.js";
+import verifyJWT from "../middlewares/jwt.middleware.js";
+import enforceOrgFromToken from "../middlewares/org.middleware.js";
 
 const router = express.Router();
 
@@ -22,6 +24,9 @@ function tryParseJsonOrCsvBytes(text) {
     return { ok: false, error: "not-json", raw: text };
   }
 }
+
+// protect all allowance routes: must be signed-in and x-org must match token
+router.use(verifyJWT, enforceOrgFromToken);
 
 // List all allowances
 router.get("/", async (req, res) => {

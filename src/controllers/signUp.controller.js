@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 async function signUp(req, res) {
   try {
-    const { username, unhashedPassword, email } = req.body;
+    const { username, unhashedPassword, email, orgKey } = req.body;
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
 
     if (existingUser) {
@@ -23,9 +23,10 @@ async function signUp(req, res) {
       username: username,
       password: hashedPassword,
       email: email,
+      mspName: orgKey, // store selected org key (Org1 | Org2 | Gov)
     });
     const jwtToken = jwt.sign(
-      { username: username, email: email },
+      { username: username, email: email, orgKey },
       process.env.JWT_SECRET
     );
 

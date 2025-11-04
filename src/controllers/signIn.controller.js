@@ -14,7 +14,7 @@ async function signIn(req, res) {
       );
       if (passwordIsCorrect) {
         const jwtToken = await jwt.sign(
-          { username: existingUser.username, email: email },
+          { username: existingUser.username, email: email, orgKey: existingUser.mspName },
           process.env.JWT_SECRET
         );
         return res.status(200).json({

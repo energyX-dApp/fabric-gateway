@@ -1,8 +1,13 @@
 // src/routes/gov.mjs
 import express from "express";
 import { getContractFor } from "../fabric.js";
+import verifyJWT from "../middlewares/jwt.middleware.js";
+import enforceOrgFromToken from "../middlewares/org.middleware.js";
 
 const router = express.Router();
+
+// Protect gov routes: must be Gov and x-org must be Gov
+router.use(verifyJWT, enforceOrgFromToken);
 
 // Create and revoke allowances
 router.post("/allowances", async (req, res) => {
