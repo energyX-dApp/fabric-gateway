@@ -26,7 +26,12 @@ router.get("/", async (req, res) => {
         client.close && client.close();
       } catch (_) {}
     }
-    res.json(JSON.parse(resultBytes.toString()));
+    const text = resultBytes.toString();
+    try {
+      res.json(JSON.parse(text));
+    } catch (parseErr) {
+      res.json({ parseError: String(parseErr.message || parseErr), data: text });
+    }
   } catch (e) {
     if (gateway) {
       try {
@@ -65,7 +70,12 @@ router.get("/:id", async (req, res) => {
         client.close && client.close();
       } catch (_) {}
     }
-    res.json(JSON.parse(resultBytes.toString()));
+    const text = resultBytes.toString();
+    try {
+      res.json(JSON.parse(text));
+    } catch (parseErr) {
+      res.json({ parseError: String(parseErr.message || parseErr), data: text });
+    }
   } catch (e) {
     if (gateway) {
       try {
