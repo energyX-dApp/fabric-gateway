@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import fabricGateway from "@hyperledger/fabric-gateway";
+import crypto from "crypto";
 const { Gateway, signers, clients } = fabricGateway;
 
 import {
@@ -36,7 +37,8 @@ export async function getContractFor(orgKey) {
   const privateKeyPem = fs.readFileSync(keyPath);
 
   const identity = { mspId: org.mspId, credentials: cert };
-  const signer = signers.newPrivateKeySigner(Buffer.from(privateKeyPem));
+  const privateKey = crypto.createPrivateKey(privateKeyPem);
+  const signer = signers.newPrivateKeySigner(privateKey);
 
   const peerName = Object.keys(ccp.peers)[0];
   const peer = ccp.peers[peerName];
