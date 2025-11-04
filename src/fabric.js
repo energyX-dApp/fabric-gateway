@@ -43,10 +43,9 @@ export async function getContractFor(orgKey) {
 
   const peerName = Object.keys(ccp.peers)[0];
   const peer = ccp.peers[peerName];
-  let peerEndpoint = peer.url;
-  if (DISCOVERY_AS_LOCALHOST) {
-    peerEndpoint = peerEndpoint.replace(/:\/\/([^:]+):/, "://localhost:");
-  }
+  const peerUrl = new URL(peer.url);
+  const hostname = DISCOVERY_AS_LOCALHOST ? "localhost" : peerUrl.hostname;
+  const peerEndpoint = `${hostname}:${peerUrl.port}`;
 
   const tlsRootCert = Buffer.from(peer.tlsCACerts.pem);
   const tlsCredentials = grpc.credentials.createSsl(tlsRootCert);
