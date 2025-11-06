@@ -5,7 +5,12 @@ dotenv.config();
 const app = express();
 // CORS config: allow local dev and deployed UI origins
 const allowedOrigins = new Set([
-  "*"
+  "http://localhost:3000",
+  "https://localhost:3000",
+  "https://energyx_ui.guywithxm5.in",
+  "https://energyx-api.guywithxm5.in",
+  "https://energyx_api.guywithxm5.in",
+  "https://frontend-energyx.vercel.app"
 ]);
 
 app.use(
