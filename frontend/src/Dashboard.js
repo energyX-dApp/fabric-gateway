@@ -3,7 +3,9 @@ import { api, authHeaders } from "./api";
 
 export default function Dashboard({ user }) {
   const [allowances, setAllowances] = useState([]);
-  const [allowanceId, setAllowanceId] = useState("");
+  const [allowanceId, setAllowanceId] = useState(""); // For Query section
+  const [consumeAllowanceId, setConsumeAllowanceId] = useState(""); // For Consume section
+  const [transferAllowanceId, setTransferAllowanceId] = useState(""); // For Transfer section
   const [allowanceView, setAllowanceView] = useState(null);
   const [newOwner, setNewOwner] = useState("");
   const [consumeAmount, setConsumeAmount] = useState("");
@@ -15,6 +17,7 @@ export default function Dashboard({ user }) {
   const [loading, setLoading] = useState({ profile: true, balance: true });
   const [error, setError] = useState({ profile: null, balance: null });
   const [profile, setProfile] = useState({ userObject: { username: user.username, carbonCreditsBalance: 0 } });
+
   const orgKey = localStorage.getItem("orgKey");
   const ownerMsp = orgKey ? `${orgKey}MSP` : "Org1MSP";
 
@@ -31,10 +34,8 @@ export default function Dashboard({ user }) {
 
     api.get("/health").then(res => setHealth(res.data)).catch(() => setHealth(null));
 
-    // Also load allowances to compute balance sum reliably and keep UI in sync
     loadAllowances();
 
-    // Periodically refresh current allowance
     const interval = setInterval(() => {
       loadAllowances();
     }, 15000);
@@ -46,7 +47,6 @@ export default function Dashboard({ user }) {
       const res = await api.get("/allowances", { headers: authHeaders() });
       const list = Array.isArray(res.data) ? res.data : [];
       setAllowances(list);
-      // If API balance endpoint is inconsistent, compute from list for the current owner
       const sum = list
         .filter((a) => a?.owner === ownerMsp && typeof a?.remaining !== "undefined")
         .reduce((acc, a) => acc + Number(a.remaining || 0), 0);
@@ -67,11 +67,10 @@ export default function Dashboard({ user }) {
   };
 
   const transferAllowance = async () => {
-    if (!allowanceId || !newOwner) return;
+    if (!transferAllowanceId || !newOwner) return;
     try {
-      await api.post(`/allowances/${allowanceId}/transfer`, { newOwner }, { headers: authHeaders() });
+      await api.post(`/allowances/${transferAllowanceId}/transfer`, { newOwner }, { headers: authHeaders() });
       await readAllowance();
-      // refresh balance after transfer
       const res = await api.get(`/allowances/owner/${ownerMsp}/balance`, { headers: authHeaders() });
       setBalanceKg(Number(res.data.balanceKg || 0));
     } catch (e) {
@@ -80,11 +79,10 @@ export default function Dashboard({ user }) {
   };
 
   const consumeAllowance = async () => {
-    if (!allowanceId || !consumeAmount) return;
+    if (!consumeAllowanceId || !consumeAmount) return;
     try {
-      await api.post(`/allowances/${allowanceId}/consume`, { amountKg: Number(consumeAmount) }, { headers: authHeaders() });
+      await api.post(`/allowances/${consumeAllowanceId}/consume`, { amountKg: Number(consumeAmount) }, { headers: authHeaders() });
       await readAllowance();
-      // refresh balance
       const res = await api.get(`/allowances/owner/${ownerMsp}/balance`, { headers: authHeaders() });
       setBalanceKg(Number(res.data.balanceKg || 0));
     } catch (e) {
@@ -117,7 +115,7 @@ export default function Dashboard({ user }) {
     }
   };
 
-  const marketValueInr = balanceKg * 25; // 1 allowance = Rs 25
+  const marketValueInr = balanceKg * 25;
 
   return (
     <div style={styles.container}>
@@ -155,24 +153,27 @@ export default function Dashboard({ user }) {
       </div>
 
       <div style={styles.section}>
+        {/* Consume Section */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Consume Allowance</h2>
           <div style={styles.formRow}>
-            <input placeholder="Allowance ID" value={allowanceId} onChange={(e) => setAllowanceId(e.target.value)} />
+            <input placeholder="Allowance ID" value={consumeAllowanceId} onChange={(e) => setConsumeAllowanceId(e.target.value)} />
             <input placeholder="Amount (kg)" type="number" value={consumeAmount} onChange={(e) => setConsumeAmount(e.target.value)} />
             <button style={styles.button} onClick={consumeAllowance}>Consume</button>
           </div>
         </div>
 
+        {/* Transfer Section */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Transfer/Trade Allowance</h2>
           <div style={styles.formRow}>
-            <input placeholder="Allowance ID" value={allowanceId} onChange={(e) => setAllowanceId(e.target.value)} />
+            <input placeholder="Allowance ID" value={transferAllowanceId} onChange={(e) => setTransferAllowanceId(e.target.value)} />
             <input placeholder="New Owner MSP (e.g., Org2MSP)" value={newOwner} onChange={(e) => setNewOwner(e.target.value)} />
             <button style={styles.button} onClick={transferAllowance}>Transfer</button>
           </div>
         </div>
 
+        {/* Query Section */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Query Allowances</h2>
           <div style={styles.formRow}>
@@ -180,6 +181,7 @@ export default function Dashboard({ user }) {
             <input placeholder="Allowance ID" value={allowanceId} onChange={(e) => setAllowanceId(e.target.value)} />
             <button style={styles.button} onClick={readAllowance}>Read</button>
           </div>
+
           {Array.isArray(allowances) && allowances.length > 0 && (
             <table style={styles.table}>
               <thead>
@@ -210,6 +212,7 @@ export default function Dashboard({ user }) {
               </tbody>
             </table>
           )}
+
           {allowanceView && (
             <div style={styles.kvWrap}>
               <div><b>ID:</b> {allowanceView.id}</div>
@@ -224,6 +227,7 @@ export default function Dashboard({ user }) {
           )}
         </div>
 
+        {/* Gov Section */}
         {orgKey === "Gov" && (
           <div style={styles.card}>
             <h2 style={styles.cardTitle}>Gov: Create / Revoke Allowance</h2>
@@ -247,7 +251,6 @@ export default function Dashboard({ user }) {
     </div>
   );
 }
-
 
 const styles = {
   container: {
@@ -393,13 +396,5 @@ const styles = {
     flexDirection: "column",
     gap: "20px",
   },
-  tradeForm: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    marginTop: "10px",
-    padding: "10px",
-    background: "#1f1f35",
-    borderRadius: "6px",
-  },
 };
+
